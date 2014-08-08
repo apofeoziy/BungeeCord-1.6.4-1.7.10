@@ -1,5 +1,6 @@
 package net.md_5.bungee.api.connection;
 
+import java.util.UUID;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.config.ServerInfo;
 import net.md_5.bungee.api.tab.TabListHandler;
@@ -110,4 +111,20 @@ public interface ProxiedPlayer extends Connection, CommandSender
      * Check if the player is using a 1.7 based client, if this returns true, its a 1.7 client
      */
     public boolean isUsingProtocolHack();
+    
+    /**
+     * Get this connection's UUID, if set.
+     *
+     * @return the UUID
+     * @deprecated In favour of {@link #getUniqueId()}
+     */
+    @Deprecated
+    String getUUID();
+
+    /**
+     * Get this connection's UUID, if set.
+     *
+     * @return the UUID
+     */
+    UUID getUniqueId();
 }

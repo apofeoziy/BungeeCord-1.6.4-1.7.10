@@ -690,7 +690,7 @@ public class InitialHandler extends PacketHandler implements PendingConnection
     {
         return uniqueId.toString().replaceAll( "-", "" );
     }
-
+    
     @Override
     public String toString()
     {

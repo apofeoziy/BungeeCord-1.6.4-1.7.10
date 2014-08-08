@@ -29,6 +29,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.logging.Level;
 
 @RequiredArgsConstructor
@@ -373,5 +374,17 @@ public final class UserConnection implements ProxiedPlayer
     public Unsafe unsafe()
     {
         return unsafe;
+    }
+
+    @Override
+    public String getUUID()
+    {
+        return getPendingConnection().getUUID();
+    }
+
+    @Override
+    public UUID getUniqueId()
+    {
+        return getPendingConnection().getUniqueId();
     }
 }
