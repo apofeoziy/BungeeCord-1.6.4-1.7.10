@@ -3,6 +3,18 @@ package net.md_5.bungee.connection;
 import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
 import io.netty.util.concurrent.ScheduledFuture;
+import java.math.BigInteger;
+import java.net.InetSocketAddress;
+import java.net.URLEncoder;
+import java.security.GeneralSecurityException;
+import java.security.MessageDigest;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import net.md_5.bungee.*;
@@ -14,6 +26,7 @@ import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.event.LoginEvent;
 import net.md_5.bungee.api.event.PlayerHandshakeEvent;
 import net.md_5.bungee.api.event.PostLoginEvent;
+import net.md_5.bungee.api.event.PreLoginEvent;
 import net.md_5.bungee.api.event.ProxyPingEvent;
 import net.md_5.bungee.http.HttpClient;
 import net.md_5.bungee.netty.*;
@@ -24,19 +37,6 @@ import net.md_5.bungee.protocol.Forge;
 import net.md_5.bungee.protocol.MinecraftInput;
 import net.md_5.bungee.protocol.packet.*;
 import net.md_5.bungee.protocol.packet.protocolhack.*;
-
-import javax.crypto.Cipher;
-import javax.crypto.SecretKey;
-import java.math.BigInteger;
-import java.net.InetSocketAddress;
-import java.net.URLEncoder;
-import java.security.GeneralSecurityException;
-import java.security.MessageDigest;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
 
 @RequiredArgsConstructor
 public class InitialHandler extends PacketHandler implements PendingConnection
@@ -297,20 +297,37 @@ public class InitialHandler extends PacketHandler implements PendingConnection
         }
 
         // If offline mode and they are already on, don't allow connect
-        if ( !isOnlineMode() && bungee.getPlayer( handshake.getUsername() ) != null )
+        if ( !this.onlineMode && bungee.getPlayer( handshake.getUsername() ) != null )
         {
             disconnect17( bungee.getTranslation( "already_connected" ) );
             return;
         }
 
-        if ( this.onlineMode )
+        Callback<PreLoginEvent> callback = new Callback<PreLoginEvent>()
         {
-            unsafe().sendPacket( request172 = EncryptionUtil.encryptRequest172( this.onlineMode ) ); // packet mapping should take care of this
-            thisState = State.ENCRYPT;
-        } else
-        {
-            finish( true );
-        }
+            @Override
+            public void done(PreLoginEvent result, Throwable error)
+            {
+                if ( result.isCancelled() )
+                {
+                    disconnect17( result.getCancelReason() );
+                }
+                if ( ch.isClosed() )
+                {
+                    return;
+                }
+                if ( onlineMode )
+                {
+                    unsafe().sendPacket( request172 = EncryptionUtil.encryptRequest172( onlineMode ) ); // packet mapping should take care of this
+                    thisState = State.ENCRYPT;
+                } else
+                {
+                    finish( true );
+                }
+            }
+        };
+
+        bungee.getPluginManager().callEvent( new PreLoginEvent( InitialHandler.this, callback ) );
     }
 
     @Override
@@ -347,7 +364,7 @@ public class InitialHandler extends PacketHandler implements PendingConnection
         }
 
         // If offline mode and they are already on, don't allow connect
-        if ( !isOnlineMode() && bungee.getPlayer( handshake.getUsername() ) != null )
+        if ( !this.onlineMode && bungee.getPlayer( handshake.getUsername() ) != null )
         {
             disconnect( bungee.getTranslation( "already_connected" ) );
             return;
@@ -356,8 +373,27 @@ public class InitialHandler extends PacketHandler implements PendingConnection
         unsafe().sendPacket( PacketConstants.I_AM_BUNGEE );
         unsafe().sendPacket( PacketConstants.FORGE_MOD_REQUEST );
 
-        unsafe().sendPacket( request164 = EncryptionUtil.encryptRequest164( this.onlineMode ) );
-        thisState = State.ENCRYPT;
+        Callback<PreLoginEvent> callback = new Callback<PreLoginEvent>()
+        {
+
+            @Override
+            public void done(PreLoginEvent result, Throwable error)
+            {
+                if ( result.isCancelled() )
+                {
+                    disconnect( result.getCancelReason() );
+                }
+                if ( ch.isClosed() )
+                {
+                    return;
+                }
+
+                unsafe().sendPacket( request164 = EncryptionUtil.encryptRequest164( onlineMode ) );
+                thisState = State.ENCRYPT;
+            }
+        };
+
+        bungee.getPluginManager().callEvent( new PreLoginEvent( InitialHandler.this, callback ) );
     }
 
     @Override
