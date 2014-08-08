@@ -1,4 +1,4 @@
-package net.md_5.bungee.config;
+package net.md_5.bungee.conf;
 
 import lombok.RequiredArgsConstructor;
 import net.md_5.bungee.Util;
