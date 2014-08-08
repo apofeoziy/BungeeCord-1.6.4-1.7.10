@@ -28,6 +28,11 @@ public class Bootstrap
      */
     public static void main(String[] args) throws Exception
     {
+        if ( Float.parseFloat( System.getProperty( "java.class.version" ) ) < 51.0 )
+        {
+            System.err.println( "*** ERROR *** BungeeCord requires Java 7 or above to function!" );
+            return;
+        }
         OptionParser parser = new OptionParser();
         parser.allowsUnrecognizedOptions();
         parser.acceptsAll( list( "v", "version" ) );
@@ -37,12 +42,6 @@ public class Bootstrap
         if ( options.has( "version" ) )
         {
             System.out.println( Bootstrap.class.getPackage().getImplementationVersion() );
-            return;
-        }
-
-        if ( !System.getProperty( "java.version" ).startsWith( "1.7" ) )
-        {
-            System.err.println( "*** ERROR *** BungeeCord requires Java 7 to function!" );
             return;
         }
 
